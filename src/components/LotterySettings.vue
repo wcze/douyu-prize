@@ -38,6 +38,7 @@ function toggleChatReading() {
         if (formSettings.isReadingChat && msg.startsWith('type@=chatmsg')) {
           let name: string = '';
           let level: number = 1;
+          let avatar: string = '';
 
           msg.split('/').forEach(m => {
             if (m.startsWith('nn@=')) {
@@ -46,10 +47,14 @@ function toggleChatReading() {
             if (m.startsWith('level@=')) {
               level = parseInt(m.split('=')[1]);
             }
+            if (m.startsWith('ic@=')) {
+              avatar = m.split('=')[1];
+              avatar = 'https://apic.douyucdn.cn/upload/' + avatar.replace(/@S/g, '/') + '_small.jpg';
+            }
           });
 
-          lotteryStore.addParticipant(name.trim(), level);
-          console.log(msg)
+          lotteryStore.addParticipant(name.trim(), level, avatar);
+          console.log(msg);
         }
       },
       () => {

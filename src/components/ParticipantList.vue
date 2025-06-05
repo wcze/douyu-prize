@@ -1,11 +1,28 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref, nextTick } from 'vue';
 import { useLotteryStore } from '../store/lotteryStore';
 
 const lotteryStore = useLotteryStore();
 
 const participants = computed(() => lotteryStore.filteredParticipants);
 const participantCount = computed(() => lotteryStore.participantCount);
+
+const participantListRef = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  syncHeightWithRightColumn();
+  window.addEventListener('resize', syncHeightWithRightColumn);
+});
+
+function syncHeightWithRightColumn() {
+  nextTick(() => {
+    const left = participantListRef.value;
+    const right = document.querySelector('.right-column') as HTMLElement;
+    if (left && right) {
+      left.style.height = right.offsetHeight + 'px';
+    }
+  });
+}
 
 function removeParticipant(id: string) {
   lotteryStore.removeParticipant(id);
@@ -19,25 +36,29 @@ function clearAllParticipants() {
 </script>
 
 <template>
-  <div class="participant-list">
+  <div class="participant-list" ref="participantListRef">
     <div class="participant-header">
       <h3>抽奖参与者 ({{ participantCount }})</h3>
       <button class="btn-clear" @click="clearAllParticipants" :disabled="participantCount === 0">
         清空
       </button>
     </div>
-    
+
     <div class="participant-grid">
       <div v-if="participantCount === 0" class="empty-state">
         <p>暂无参与者</p>
         <p class="empty-hint">请添加参与者或等待弹幕消息</p>
       </div>
-      
+
       <transition-group name="participant-list" tag="div" class="participant-items">
         <div v-for="participant in participants" :key="participant.id" class="participant-item">
           <div class="participant-info">
-            <span class="participant-name">{{ participant.username }}</span>
-            <span class="participant-level">Lv.{{ participant.level }}</span>
+            <img v-if="participant.avatar" :src="participant.avatar" alt="Avatar" class="participant-avatar" />
+            <div class="participant-details">
+              <span class="participant-name">{{ participant.username }}</span>
+              <span class="participant-level">{{ participant.level == 99999 ? '[手动添加]' : 'Lv.' + participant.level
+              }}</span>
+            </div>
           </div>
           <button class="btn-remove" @click="removeParticipant(participant.id)">
             <span class="remove-icon">×</span>
@@ -53,6 +74,7 @@ function clearAllParticipants() {
   display: flex;
   flex-direction: column;
   height: 100%;
+  max-height: 100%;
   background: #ffffff;
   border-radius: 12px;
   padding: 1rem;
@@ -65,7 +87,7 @@ function clearAllParticipants() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  
+
   h3 {
     margin: 0;
     font-size: 1.2rem;
@@ -82,11 +104,11 @@ function clearAllParticipants() {
   cursor: pointer;
   font-size: 0.8rem;
   transition: all 0.2s;
-  
+
   &:hover:not(:disabled) {
     background: #e0e0e0;
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -95,39 +117,10 @@ function clearAllParticipants() {
 
 .participant-grid {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: auto;
   padding-right: 0.5rem;
-  
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: #f5f5f5;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: #e0e0e0;
-    border-radius: 2px;
-  }
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #999;
-  
-  p {
-    margin: 0.5rem 0;
-  }
-  
-  .empty-hint {
-    font-size: 0.8rem;
-    opacity: 0.8;
-  }
+  overflow-x: hidden;
 }
 
 .participant-items {
@@ -137,6 +130,9 @@ function clearAllParticipants() {
 }
 
 .participant-item {
+  flex: 0 0 calc(50% - 0.4rem); // 一行两个，间隙均分
+  max-width: 50%;
+  box-sizing: border-box;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -144,17 +140,33 @@ function clearAllParticipants() {
   border-radius: 6px;
   padding: 0.7rem;
   transition: all 0.2s;
-  
+  max-width: 100%;
+
   &:hover {
     background: #eeeeee;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 }
 
 .participant-info {
   display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.participant-details {
+  display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.participant-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  object-fit: cover;
 }
 
 .participant-name {
@@ -184,7 +196,7 @@ function clearAllParticipants() {
   padding: 0;
   font-size: 1rem;
   transition: all 0.2s;
-  
+
   &:hover {
     background: rgba(255, 0, 0, 0.1);
     color: #ff4444;
@@ -207,14 +219,35 @@ function clearAllParticipants() {
 }
 
 @media (max-width: 768px) {
-  .participant-items {
-    grid-template-columns: 1fr 1fr;
+  .participant-item {
+    flex: 0 0 50%;
+    max-width: 50%;
   }
 }
 
 @media (max-width: 480px) {
-  .participant-items {
-    grid-template-columns: 1fr;
+  .participant-item {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+
+  p {
+    margin: 0.5rem 0;
+  }
+
+  .empty-hint {
+    font-size: 0.8rem;
+    opacity: 0.8;
   }
 }
 </style>

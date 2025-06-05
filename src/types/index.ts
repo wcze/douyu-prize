@@ -1,6 +1,7 @@
 export interface Participant {
   id: string;
   username: string;
+  avatar: string;
   level: number;
   timestamp: number;
 }

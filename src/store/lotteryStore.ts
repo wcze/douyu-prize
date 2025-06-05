@@ -15,66 +15,67 @@ export const useLotteryStore = defineStore('lottery', () => {
     isLotteryRunning: false,
     isReadingChat: false
   });
-  
+
   // Getters
   const filteredParticipants = computed(() => {
     return participants.value.filter(p => p.level >= settings.value.minLevel);
   });
 
   const participantCount = computed(() => filteredParticipants.value.length);
-  
+
   // Actions
-  function addParticipant(username: string, level: number = 1) {
+  function addParticipant(username: string, level: number = 1, avatar: string = 'https://apic.douyucdn.cn/upload/avatar/default/11_small.jpg',) {
     const existingParticipant = participants.value.find(p => p.username === username);
-    
+
     if (!existingParticipant && participants.value.length < settings.value.maxParticipants) {
       const newParticipant: Participant = {
         id: generateId(),
+        avatar,
         username,
         level,
         timestamp: Date.now()
       };
-      
+
       participants.value.push(newParticipant);
       return true;
     }
-    
+
     return false;
   }
-  
+
   function removeParticipant(id: string) {
     const index = participants.value.findIndex(p => p.id === id);
     if (index !== -1) {
       participants.value.splice(index, 1);
     }
   }
-  
+
   function clearParticipants() {
     participants.value = [];
   }
-  
+
   async function drawWinner() {
     if (filteredParticipants.value.length === 0) return null;
-    
+
     settings.value.isLotteryRunning = true;
-    
+
     // Simulate drawing process
     return new Promise<Participant>((resolve) => {
       setTimeout(() => {
         const eligibleParticipants = filteredParticipants.value;
         const winnerCount = Math.min(settings.value.winnerCount, eligibleParticipants.length);
         const selectedWinners: Participant[] = [];
-        
+
         // Select multiple winners without duplicates
         while (selectedWinners.length < winnerCount) {
           const randomIndex = Math.floor(Math.random() * eligibleParticipants.length);
           const winner = eligibleParticipants[randomIndex];
-          
+
           if (!selectedWinners.find(w => w.id === winner.id)) {
             selectedWinners.push(winner);
           }
         }
-        
+
         // Add winners to the winners list
         winners.value.unshift(...selectedWinners);
         settings.value.isLotteryRunning = false;
@@ -82,20 +83,20 @@ export const useLotteryStore = defineStore('lottery', () => {
       }, 3000); // Animation time
     });
   }
-  
+
   function updateSettings(newSettings: Partial<LotterySettings>) {
     settings.value = { ...settings.value, ...newSettings };
   }
-  
+
   function clearWinners() {
     winners.value = [];
   }
-  
+
   // Helper function to generate unique IDs
   function generateId(): string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
-  
+
   return {
     participants,
     winners,

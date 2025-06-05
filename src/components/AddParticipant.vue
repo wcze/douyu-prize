@@ -8,7 +8,7 @@ const username = ref('');
 
 function addParticipant() {
   if (username.value.trim()) {
-    const success = lotteryStore.addParticipant(username.value.trim(), 1);
+    const success = lotteryStore.addParticipant(username.value.trim(), 99999);
     if (success) {
       username.value = '';
     }

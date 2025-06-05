@@ -103,11 +103,18 @@ onMounted(() => {
   margin: 0 auto;
   width: 100%;
   height: 100vh;
+  align-items: stretch;
+  position: relative;
 }
 
 .left-column {
   width: 40%;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%; 
+  overflow: hidden;
 }
 
 .right-column {
@@ -116,6 +123,8 @@ onMounted(() => {
   flex-direction: column;
   gap: 2rem;
   min-width: 0;
+  height: 100%;
+  min-height: 0;
 }
 
 .controls-section {
