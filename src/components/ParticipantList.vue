@@ -12,6 +12,18 @@ const participantListRef = ref<HTMLElement | null>(null);
 onMounted(() => {
   syncHeightWithRightColumn();
   window.addEventListener('resize', syncHeightWithRightColumn);
+  const right = document.querySelector('.right-column') as HTMLElement;
+  let lastRightHeight = right?.offsetHeight || 0;
+  const observer = new MutationObserver(() => {
+    const right = document.querySelector('.right-column') as HTMLElement;
+    if (right && right.offsetHeight !== lastRightHeight) {
+      lastRightHeight = right.offsetHeight;
+      syncHeightWithRightColumn();
+    }
+  });
+  if (right) {
+    observer.observe(right, { attributes: true, childList: true, subtree: true });
+  }
 });
 
 function syncHeightWithRightColumn() {
@@ -57,7 +69,7 @@ function clearAllParticipants() {
             <div class="participant-details">
               <span class="participant-name">{{ participant.username }}</span>
               <span class="participant-level">{{ participant.level == 99999 ? '[手动添加]' : 'Lv.' + participant.level
-              }}</span>
+                }}</span>
             </div>
           </div>
           <button class="btn-remove" @click="removeParticipant(participant.id)">
