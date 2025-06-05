@@ -2,6 +2,7 @@
 import { reactive, watchEffect } from 'vue';
 import { useLotteryStore } from '../store/lotteryStore';
 import Ex_WebSocket_UnLogin from '../utils/douyu_ex_websocket';
+import getRealRid from '../utils/douyu_getRealRid';
 
 
 const lotteryStore = useLotteryStore();
@@ -29,46 +30,56 @@ function updateSettings() {
 let wsInstance: Ex_WebSocket_UnLogin | null = null;
 
 function toggleChatReading() {
-  formSettings.isReadingChat = !formSettings.isReadingChat;
+  getRealRid(formSettings.roomId).then((realRidInfo: any) => {
 
-  if (formSettings.isReadingChat) {
-    wsInstance = new Ex_WebSocket_UnLogin(
-      lotteryStore.settings.roomId,
-      (msg: string) => {
-        if (formSettings.isReadingChat && msg.startsWith('type@=chatmsg')) {
-          let name: string = '';
-          let level: number = 1;
-          let avatar: string = '';
-
-          msg.split('/').forEach(m => {
-            if (m.startsWith('nn@=')) {
-              name = m.split('=')[1];
-            }
-            if (m.startsWith('level@=')) {
-              level = parseInt(m.split('=')[1]);
-            }
-            if (m.startsWith('ic@=')) {
-              avatar = m.split('=')[1];
-              avatar = 'https://apic.douyucdn.cn/upload/' + avatar.replace(/@S/g, '/') + '_small.jpg';
-            }
-          });
-
-          lotteryStore.addParticipant(name.trim(), level, avatar);
-          console.log(msg);
-        }
-      },
-      () => {
-        console.error('WebSocket error');
-      }
-    );
-  } else {
-    if (wsInstance && typeof wsInstance.close === 'function') {
-      wsInstance.close();
+    if (Array.isArray(realRidInfo) && realRidInfo.length === 0) {
+      alert('房间号无效或不存在，请检查输入的房间号。');
+      return;
     }
-    wsInstance = null;
-  }
 
-  updateSettings();
+    const realRoomId = realRidInfo.room_id;
+
+    formSettings.isReadingChat = !formSettings.isReadingChat;
+
+    if (formSettings.isReadingChat) {
+      wsInstance = new Ex_WebSocket_UnLogin(
+        realRoomId,
+        (msg: string) => {
+          if (formSettings.isReadingChat && msg.startsWith('type@=chatmsg')) {
+            let name: string = '';
+            let level: number = 1;
+            let avatar: string = '';
+
+            msg.split('/').forEach(m => {
+              if (m.startsWith('nn@=')) {
+                name = m.split('=')[1];
+              }
+              if (m.startsWith('level@=')) {
+                level = parseInt(m.split('=')[1]);
+              }
+              if (m.startsWith('ic@=')) {
+                avatar = m.split('=')[1];
+                avatar = 'https://apic.douyucdn.cn/upload/' + avatar.replace(/@S/g, '/') + '_small.jpg';
+              }
+            });
+
+            lotteryStore.addParticipant(name.trim(), level, avatar);
+            console.log(msg);
+          }
+        },
+        () => {
+          console.error('WebSocket error');
+        }
+      );
+    } else {
+      if (wsInstance && typeof wsInstance.close === 'function') {
+        wsInstance.close();
+      }
+      wsInstance = null;
+    }
+
+    updateSettings();
+  });
 }
 
 // Sync store changes back to form
@@ -89,14 +100,8 @@ watchEffect(() => {
     <div class="settings-form">
       <div class="form-group">
         <label for="roomId">房间号</label>
-        <input
-          id="roomId"
-          v-model="formSettings.roomId"
-          type="text"
-          placeholder="输入房间号"
-          @change="updateSettings"
-          :disabled="formSettings.isReadingChat"
-        />
+        <input id="roomId" v-model="formSettings.roomId" type="text" placeholder="输入房间号" @change="updateSettings"
+          :disabled="formSettings.isReadingChat" />
       </div>
 
       <div class="form-group">
