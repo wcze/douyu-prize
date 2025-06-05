@@ -89,7 +89,14 @@ watchEffect(() => {
     <div class="settings-form">
       <div class="form-group">
         <label for="roomId">房间号</label>
-        <input id="roomId" v-model="formSettings.roomId" type="text" placeholder="输入房间号" @change="updateSettings" />
+        <input
+          id="roomId"
+          v-model="formSettings.roomId"
+          type="text"
+          placeholder="输入房间号"
+          @change="updateSettings"
+          :disabled="formSettings.isReadingChat"
+        />
       </div>
 
       <div class="form-group">
