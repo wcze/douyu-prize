@@ -2,7 +2,7 @@
 import { reactive, watchEffect } from 'vue';
 import { useLotteryStore } from '../store/lotteryStore';
 import Ex_WebSocket_UnLogin from '../utils/douyu_ex_websocket';
-import getRealRid from '../utils/douyu_getRealRid';
+
 
 
 const lotteryStore = useLotteryStore();
@@ -30,56 +30,47 @@ function updateSettings() {
 let wsInstance: Ex_WebSocket_UnLogin | null = null;
 
 function toggleChatReading() {
-  getRealRid(formSettings.roomId).then((realRidInfo: any) => {
+  
+  formSettings.isReadingChat = !formSettings.isReadingChat;
 
-    if (Array.isArray(realRidInfo) && realRidInfo.length === 0) {
-      alert('房间号无效或不存在，请检查输入的房间号。');
-      return;
-    }
+  if (formSettings.isReadingChat) {
+    wsInstance = new Ex_WebSocket_UnLogin(
+      formSettings.roomId,
+      (msg: string) => {
+        if (formSettings.isReadingChat && msg.startsWith('type@=chatmsg')) {
+          let name: string = '';
+          let level: number = 1;
+          let avatar: string = '';
 
-    const realRoomId = realRidInfo.room_id;
+          msg.split('/').forEach(m => {
+            if (m.startsWith('nn@=')) {
+              name = m.split('=')[1];
+            }
+            if (m.startsWith('level@=')) {
+              level = parseInt(m.split('=')[1]);
+            }
+            if (m.startsWith('ic@=')) {
+              avatar = m.split('=')[1];
+              avatar = 'https://apic.douyucdn.cn/upload/' + avatar.replace(/@S/g, '/') + '_small.jpg';
+            }
+          });
 
-    formSettings.isReadingChat = !formSettings.isReadingChat;
-
-    if (formSettings.isReadingChat) {
-      wsInstance = new Ex_WebSocket_UnLogin(
-        realRoomId,
-        (msg: string) => {
-          if (formSettings.isReadingChat && msg.startsWith('type@=chatmsg')) {
-            let name: string = '';
-            let level: number = 1;
-            let avatar: string = '';
-
-            msg.split('/').forEach(m => {
-              if (m.startsWith('nn@=')) {
-                name = m.split('=')[1];
-              }
-              if (m.startsWith('level@=')) {
-                level = parseInt(m.split('=')[1]);
-              }
-              if (m.startsWith('ic@=')) {
-                avatar = m.split('=')[1];
-                avatar = 'https://apic.douyucdn.cn/upload/' + avatar.replace(/@S/g, '/') + '_small.jpg';
-              }
-            });
-
-            lotteryStore.addParticipant(name.trim(), level, avatar);
-            console.log(msg);
-          }
-        },
-        () => {
-          console.error('WebSocket error');
+          lotteryStore.addParticipant(name.trim(), level, avatar);
+          console.log(msg);
         }
-      );
-    } else {
-      if (wsInstance && typeof wsInstance.close === 'function') {
-        wsInstance.close();
+      },
+      () => {
+        console.error('WebSocket error');
       }
-      wsInstance = null;
+    );
+  } else {
+    if (wsInstance && typeof wsInstance.close === 'function') {
+      wsInstance.close();
     }
+    wsInstance = null;
+  }
 
-    updateSettings();
-  });
+  updateSettings();
 }
 
 // Sync store changes back to form
@@ -108,7 +99,7 @@ watchEffect(() => {
         <label for="minLevel">最低用户等级</label>
         <div class="range-container">
           <input id="minLevel" v-model.number="formSettings.minLevel" type="range" min="1" max="50"
-            @change="updateSettings" />
+            @change="updateSettings" :disabled="formSettings.isReadingChat" />
           <span class="range-value">{{ formSettings.minLevel }}</span>
         </div>
       </div>
@@ -117,7 +108,7 @@ watchEffect(() => {
         <label for="maxParticipants">最大参与人数</label>
         <div class="range-container">
           <input id="maxParticipants" v-model.number="formSettings.maxParticipants" type="range" min="10" max="500"
-            step="10" @change="updateSettings" />
+            step="10" @change="updateSettings" :disabled="formSettings.isReadingChat" />
           <span class="range-value">{{ formSettings.maxParticipants }}</span>
         </div>
       </div>
@@ -170,7 +161,7 @@ watchEffect(() => {
   }
 
   input[type="text"] {
-    background: #f5f5f5;
+    background: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 6px;
     padding: 0.8rem 1rem;
@@ -184,6 +175,13 @@ watchEffect(() => {
       background: #fff;
       box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
     }
+  }
+
+  input[type="text"]:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+    color: #999;
+    border-color: #e0e0e0;
   }
 
   input[type="range"] {
@@ -208,6 +206,16 @@ watchEffect(() => {
         transform: scale(1.1);
         box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
       }
+    }
+  }
+
+  input[type="range"]:disabled {
+    background: #e0e0e0;
+    cursor: not-allowed;
+
+    &::-webkit-slider-thumb {
+      background: #bdbdbd;
+      cursor: not-allowed;
     }
   }
 }
@@ -241,12 +249,12 @@ watchEffect(() => {
   }
 
   &.active {
-    background: #2196f3;
+    background: #ad0000;
     color: white;
-    border-color: #2196f3;
+    border-color: #ad0000;
 
     &:hover {
-      background: #1976d2;
+      background: #660000;
     }
   }
 }

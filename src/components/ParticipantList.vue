@@ -230,10 +230,15 @@ function clearAllParticipants() {
   transform: scale(0.8);
 }
 
+@media (max-width: 992px) {
+  .participant-items{
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .participant-item {
     flex: 0 0 50%;
-    max-width: 50%;
   }
 }
 

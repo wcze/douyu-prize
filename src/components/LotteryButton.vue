@@ -9,7 +9,7 @@ const hasParticipants = computed(() => lotteryStore.participantCount > 0);
 
 async function startLottery() {
   if (isRunning.value || !hasParticipants.value) return;
-
+  lotteryStore.settings.isReadingChat = false;
   lotteryStore.clearWinners();
   await lotteryStore.drawWinner();
 }

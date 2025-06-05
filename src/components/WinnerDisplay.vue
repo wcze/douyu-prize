@@ -29,7 +29,7 @@ watch(isLotteryRunning, async (running) => {
         const randomIndex = Math.floor(Math.random() * users.length);
         return users[randomIndex];
       });
-    }, 200);
+    }, 150);
 
     await new Promise(resolve => setTimeout(resolve, 3000));
     clearInterval(interval);
